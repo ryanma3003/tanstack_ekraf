@@ -1,245 +1,86 @@
-Welcome to your new TanStack Start app!
+# TanStack Ekraf Dashboard
 
-# Getting Started
+A secure admin dashboard for an Ekraf (creative-economy) catalogue: **login → product CRUD →
+user/role management**, built with TanStack Start + Better Auth.
 
-To run this application:
+> **No database by design.** Data lives in memory for the life of the server process and resets on
+> every restart / redeploy / cold start. See [Seeding](#seeding) below.
+
+## Stack
+
+| Choice | Value |
+|---|---|
+| Framework | TanStack Start (React 19) |
+| Router | TanStack Router (file-based, `src/routes`, `routeTree.gen.ts`) |
+| Forms | TanStack React Form (`form.Field` render props) |
+| Table | TanStack React Table v9 (`useTable`, `tableFeatures`, `sortedRowModel`) |
+| Query | TanStack Query (`useQuery`) + SSR Query integration |
+| Auth | Better Auth (`emailAndPassword`, `tanstackStartCookies`) |
+| Styling | Tailwind CSS + shadcn UI |
+| Database | none (Better Auth `memoryAdapter`) |
+| Tooling | bun · Biome · Vercel (Nitro output) |
+
+## Getting started
 
 ```bash
 bun install
-bun dev
+cp .env.example .env.local      # fill BETTER_AUTH_URL + BETTER_AUTH_SECRET
+bun dev                         # http://localhost:3000
 ```
 
-# Building For Production
+Required environment variables (see `.env.example`):
 
-To build this application for production:
+| Variable | Purpose | Required |
+|---|---|---|
+| `BETTER_AUTH_URL` | Public base URL of the app | Yes (dev: `http://localhost:3000`) |
+| `BETTER_AUTH_SECRET` | Session/token signing secret (`bun x @better-auth/cli secret`) | Yes |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Override the one-time seed account | No (dev fallbacks) |
+
+### Seeding
+
+There is no persistent database. To create the administrator account and sample products:
+
+1. Visit `/setup` and click **Seed Admin Account** (idempotent — safe to run twice).
+2. Sign in at `/login` with `admin@example.com` / `admin12345` (or your `SEED_ADMIN_*` values).
+3. Explore `/dashboard`, `/products`, and `/users`.
+
+## Routes
+
+| Route | Access | Description |
+|---|---|---|
+| `/` | public | Home / marketing page |
+| `/login` | public | Sign in (redirects to `/dashboard` if already signed in) |
+| `/setup` | public | One-time admin + sample-data seed |
+| `/dashboard` | auth | Protected overview |
+| `/products` | auth | Catalogue list; create/edit/delete via modals |
+| `/users` | admin | User list; role changes and deletion via modals |
+| `/api/auth/$` | public | Better Auth HTTP handler |
+
+Admin pages live under the pathless `_admin` layout route (`src/routes/_admin/route.tsx`), which
+enforces the session guard and renders the `DashboardShell` sidebar.
+
+## Scripts
 
 ```bash
-bun run build
+bun dev                # dev server on :3000
+bun run lint           # Biome check
+bun run format         # Biome format --write
+bun run build          # production build (must pass)
+bunx tsr generate      # regenerate routeTree.gen.ts after route changes
 ```
 
-## Styling
+## Security
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+Every mutation is authorized server-side, every server function validates its input with Zod, login is
+rate-limited, sessions use `httpOnly` / `sameSite=lax` cookies with a 1-day timeout, and admin writes
+are recorded in an audit log. See [`NOTES.md`](./NOTES.md) for the full list and the attack each
+control prevents.
 
-### Removing Tailwind CSS
+## Deployment (Vercel)
 
-If you prefer not to use Tailwind CSS:
+1. Push the repo and import it in Vercel (TanStack Start is auto-detected; `vercel.json` is included).
+2. Add `BETTER_AUTH_URL` and `BETTER_AUTH_SECRET` under **Settings > Environment Variables**.
+3. Deploy, then run `/setup` once against the deployment to recreate the admin + sample data.
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-bun dlx shadcn@latest add button
-```
-
-
-## Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   bun x @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-bun x @better-auth/cli migrate
-```
-
-
-## Deploy to Vercel
-
-1. Push this repo to GitHub, GitLab, or Bitbucket
-2. In Vercel, choose **Add New > Project** and import the repo
-3. Keep the detected TanStack Start framework settings
-4. Add production values from `.env.example` under **Settings > Environment Variables**
-5. Deploy
-
-Vercel runs the build script and deploys Nitro's output as Vercel Functions and
-static assets. The included `vercel.json` makes framework detection explicit.
-
-Variables prefixed with `VITE_` are included in the browser bundle. Keep secrets
-unprefixed so they remain server-only.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Because the app is stateless, in-memory data is **per serverless instance**. For real production use,
+add a persistent Better Auth adapter (Drizzle/Prisma/Kysely/Mongo) and a `DATABASE_URL`.
