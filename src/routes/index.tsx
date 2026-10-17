@@ -1,69 +1,23 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, BarChart3, Boxes, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/")({ component: Home });
-
 function Home() {
-	const { data: session, isPending } = authClient.useSession();
-
-	if (isPending) {
-		return (
-			<main className="page-wrap px-4 py-12">
-				<p className="text-[var(--sea-ink-soft)]">Loading session...</p>
-			</main>
-		);
-	}
-
-	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Ekraf Dashboard</p>
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
-					Admin Dashboard
-				</h1>
-				<p className="m-0 max-w-3xl text-base leading-8 text-[var(--sea-ink-soft)]">
-					Secure product and user administration backed by Better Auth and TanStack Start.
-				</p>
-
-				{session?.user ? (
-					<div className="mt-8 flex flex-wrap gap-4">
-						<div className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4">
-							<p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-								Signed in as <span className="font-semibold">{session.user.email}</span>
-							</p>
-							<p className="m-0 mt-1 text-xs text-[var(--sea-ink-soft)]">
-								{session.user.email === "admin@example.com" ? "Administrator" : "User"}
-							</p>
-						</div>
-						<Link
-							to="/dashboard"
-							className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-3 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:bg-[var(--link-bg-hover)]"
-						>
-							Open Dashboard
-						</Link>
-					</div>
-				) : (
-					<div className="mt-8 flex flex-wrap gap-4">
-						<Link
-							to="/demo/better-auth"
-							className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-3 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:bg-[var(--link-bg-hover)]"
-						>
-							Sign in / Sign up
-						</Link>
-						<p className="m-0 mt-3 sm:mt-0 text-sm text-[var(--sea-ink-soft)]">
-							Create an account, then{" "}
-							<Link
-								to="/setup"
-								className="underline underline-offset-4 font-medium hover:text-[var(--sea-ink)]"
-							>
-								seed the admin account
-							</Link>
-							to unlock product and user CRUD.
-						</p>
-					</div>
-				)}
-			</section>
-		</main>
-	);
+  const { data: session, isPending } = authClient.useSession();
+  return <main className="page-wrap px-4 py-10 sm:py-16">
+    <section className="relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface-strong)] px-6 py-10 shadow-[0_24px_70px_rgba(15,55,52,0.10)] sm:px-12 sm:py-14">
+      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[var(--hero-a)] blur-3xl" /><div className="pointer-events-none absolute -bottom-28 right-1/4 h-60 w-60 rounded-full bg-[var(--hero-b)] blur-3xl" />
+      <div className="relative max-w-3xl rise-in"><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-xs font-bold text-[var(--sea-ink)]"><Sparkles size={14} /> Your commerce operations hub</div>
+        <h1 className="display-title mb-5 text-5xl font-bold leading-[1.05] tracking-tight text-[var(--sea-ink)] sm:text-7xl">A clearer view of <span className="text-[var(--lagoon-deep)]">your business.</span></h1>
+        <p className="mb-8 max-w-2xl text-base leading-8 text-[var(--sea-ink-soft)] sm:text-lg">Manage your catalog, keep inventory in check, and control team access from one focused workspace built for fast, confident decisions.</p>
+        <div className="flex flex-col gap-3 sm:flex-row">{!isPending && session?.user ? <Link to="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sea-ink)] px-5 py-3.5 text-sm font-bold text-white no-underline shadow-lg hover:-translate-y-0.5">Open dashboard <ArrowRight size={17} /></Link> : <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sea-ink)] px-5 py-3.5 text-sm font-bold text-white no-underline shadow-lg hover:-translate-y-0.5">Sign in to workspace <ArrowRight size={17} /></Link>}<Link to="/setup" className="inline-flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-5 py-3.5 text-sm font-bold text-[var(--sea-ink)] no-underline hover:bg-[var(--link-bg-hover)]">Configure workspace</Link></div>
+        <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[var(--sea-ink-soft)]"><span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Role-based access</span><span className="inline-flex items-center gap-2"><Boxes size={15} /> Product catalog</span><span className="inline-flex items-center gap-2"><Users size={15} /> Team management</span></div>
+      </div>
+      <div className="relative mt-12 grid gap-3 sm:grid-cols-3 lg:absolute lg:bottom-10 lg:right-10 lg:mt-0 lg:w-[43%]"><Feature icon={<Boxes size={20} />} title="Catalog" body="Edit product details and stock." /><Feature icon={<BarChart3 size={20} />} title="Overview" body="See key numbers at a glance." /><Feature icon={<Users size={20} />} title="Team" body="Manage people and permissions." /></div>
+    </section>
+    <section className="mt-8 grid gap-4 sm:grid-cols-3"><InfoCard number="01" title="Stay organized" body="Keep product information consistent and easy to find." /><InfoCard number="02" title="Work securely" body="Access checks and server validation protect sensitive actions." /><InfoCard number="03" title="Move faster" body="A responsive layout makes daily tasks comfortable on any screen." /></section>
+  </main>;
 }
+function Feature({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) { return <div className="rounded-2xl border border-[var(--line)] bg-[var(--chip-bg)] p-4 backdrop-blur"><div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]">{icon}</div><p className="mb-1 text-sm font-extrabold text-[var(--sea-ink)]">{title}</p><p className="m-0 text-xs leading-5 text-[var(--sea-ink-soft)]">{body}</p></div>; }
+function InfoCard({ number, title, body }: { number: string; title: string; body: string }) { return <article className="feature-card rounded-2xl border border-[var(--line)] p-5"><span className="text-xs font-extrabold tracking-[0.2em] text-[var(--lagoon-deep)]">{number}</span><h2 className="mb-2 mt-4 text-base font-extrabold text-[var(--sea-ink)]">{title}</h2><p className="m-0 text-sm leading-6 text-[var(--sea-ink-soft)]">{body}</p></article>; }

@@ -1,187 +1,30 @@
-import { useForm } from "@tanstack/react-form";
-import { Link, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, ImagePlus, PackagePlus } from "lucide-react";
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getServerSession } from "@/lib/server/auth";
 import { createProduct } from "@/lib/server/products";
 
-type FormData = {
-	name: string;
-	description: string;
-	price: string;
-	stock: string;
-};
-
-export const Route = createFileRoute("/products/new")({
-	beforeLoad: async () => {
-		const { session } = await getServerSession();
-		if (!session) {
-			return redirect({ to: "/demo/better-auth" }) as any;
-		}
-	},
-	component: NewProduct,
-});
-
+type FormData = { name: string; description: string; price: string; stock: string; imageUrl: string; };
+export const Route = createFileRoute("/products/new")({ beforeLoad: async () => { const { session } = await getServerSession(); if (!session) throw redirect({ to: "/login" }); }, component: NewProduct });
 function NewProduct() {
-	const navigate = useNavigate();
-	const createFn = useServerFn(createProduct);
-	const [message, setMessage] = useState("");
-	const [messageType, setMessageType] = useState<"success" | "error">("success");
-
-	const form = useForm({
-		defaultValues: {
-			name: "",
-			description: "",
-			price: "",
-			stock: "",
-		} as FormData,
-		onSubmit: async ({ value }) => {
-			setMessage("");
-			if (!value.name || !value.description) {
-				setMessageType("error");
-				setMessage("Name and description are required.");
-				return;
-			}
-			const price = Number(value.price);
-			const stock = Number(value.stock);
-			if (!Number.isFinite(price) || price < 0) {
-				setMessageType("error");
-				setMessage("Price must be a valid positive number.");
-				return;
-			}
-			if (!Number.isFinite(stock) || stock < 0) {
-				setMessageType("error");
-				setMessage("Stock must be a valid positive number.");
-				return;
-			}
-			try {
-				await createFn({
-					data: {
-						name: value.name,
-						description: value.description,
-						price,
-						stock,
-					},
-				});
-				setMessageType("success");
-				setMessage("Product created successfully.");
-				navigate({ to: "/products" });
-			} catch (err) {
-				setMessageType("error");
-				setMessage(err instanceof Error ? err.message : "Create failed");
-			}
-		},
-	});
-
-	const errorsFor = (name: keyof FormData) => form.getFieldMeta(name)?.errors ?? [];
-
-	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<div className="flex items-center gap-3 mb-6">
-					<Link
-						to="/products"
-						className="text-xs text-[var(--sea-ink-soft)] underline underline-offset-4 hover:text-[var(--sea-ink)]"
-					>
-						&larr; Back to products
-					</Link>
-					<h1 className="display-title text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
-						Add Product
-					</h1>
-				</div>
-
-				<>
-					{message && (
-						<div
-							className={`mb-5 p-4 rounded-xl border ${
-								messageType === "success"
-									? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400"
-									: "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
-							}`}
-						>
-							{message}
-						</div>
-					)}
-
-					<form
-						onSubmit={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							form.handleSubmit();
-						}}
-						className="space-y-5"
-					>
-						<div className="space-y-2">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								id="name"
-								value={form.getFieldValue("name")}
-								onChange={(e) => form.setFieldValue("name", e.target.value)}
-								placeholder="e.g. Starter Kit"
-								className="w-full"
-							/>
-							{errorsFor("name").length > 0 && (
-								<p className="text-xs text-red-600">{errorsFor("name").join(", ")}</p>
-							)}
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="description">Description</Label>
-							<Input
-								id="description"
-								value={form.getFieldValue("description")}
-								onChange={(e) => form.setFieldValue("description", e.target.value)}
-								placeholder="e.g. Everything you need to begin."
-								className="w-full"
-							/>
-							{errorsFor("description").length > 0 && (
-								<p className="text-xs text-red-600">{errorsFor("description").join(", ")}</p>
-							)}
-						</div>
-
-						<div className="grid gap-4 sm:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="price">Price</Label>
-								<Input
-									id="price"
-									type="number"
-									value={form.getFieldValue("price")}
-									onChange={(e) => form.setFieldValue("price", e.target.value)}
-									placeholder="0.00"
-									className="w-full"
-								/>
-								{errorsFor("price").length > 0 && (
-									<p className="text-xs text-red-600">{errorsFor("price").join(", ")}</p>
-								)}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="stock">Stock</Label>
-								<Input
-									id="stock"
-									type="number"
-									value={form.getFieldValue("stock")}
-									onChange={(e) => form.setFieldValue("stock", e.target.value)}
-									placeholder="0"
-									className="w-full"
-								/>
-								{errorsFor("stock").length > 0 && (
-									<p className="text-xs text-red-600">{errorsFor("stock").join(", ")}</p>
-								)}
-							</div>
-						</div>
-
-						<div className="pt-4 flex justify-end">
-							<Button type="submit" disabled={form.state.isSubmitting} className="w-full sm:w-auto">
-								{form.state.isSubmitting ? "Creating..." : "Create Product"}
-							</Button>
-						</div>
-					</form>
-				</>
-			</section>
-		</main>
-	);
+  const navigate = useNavigate(); const createFn = useServerFn(createProduct);
+  const [form, setForm] = useState<FormData>({ name: "", description: "", price: "", stock: "", imageUrl: "" });
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [message, setMessage] = useState(""); const [loading, setLoading] = useState(false);
+  const setField = (field: keyof FormData, value: string) => { setForm((current) => ({ ...current, [field]: value })); setErrors((current) => ({ ...current, [field]: undefined })); };
+  const validate = () => { const next: Partial<Record<keyof FormData, string>> = {}; if (!form.name.trim()) next.name = "Product name is required."; if (!form.description.trim()) next.description = "Description is required."; if (form.price.trim() === "" || !Number.isFinite(Number(form.price)) || Number(form.price) < 0) next.price = "Enter a valid non-negative price."; if (form.stock.trim() === "" || !Number.isInteger(Number(form.stock)) || Number(form.stock) < 0) next.stock = "Stock must be a non-negative whole number."; if (form.imageUrl.trim()) { try { const url = new URL(form.imageUrl.trim()); if (!["http:", "https:"].includes(url.protocol)) next.imageUrl = "Use a valid HTTP or HTTPS image URL."; } catch { next.imageUrl = "Enter a valid image URL."; } } setErrors(next); return Object.keys(next).length === 0; };
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setMessage(""); if (!validate()) return; setLoading(true); try { await createFn({ data: { name: form.name.trim(), description: form.description.trim(), price: Number(form.price), stock: Number(form.stock), imageUrl: form.imageUrl.trim() } }); await navigate({ to: "/products", replace: true }); } catch (error) { setMessage(error instanceof Error ? error.message : "Could not create product."); } finally { setLoading(false); } };
+  return <main className="px-0 py-2 sm:py-3"><Link to="/products" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)]"><ArrowLeft size={16} /> Back to products</Link><section className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-sm"><div className="border-b border-[var(--line)] p-5 sm:p-7"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]"><PackagePlus size={21} /></span><div><p className="island-kicker mb-1">Catalog</p><h1 className="m-0 text-2xl font-extrabold text-[var(--sea-ink)]">Add product</h1></div></div><p className="mb-0 mt-3 text-sm leading-6 text-[var(--sea-ink-soft)]">Fill in the details below to add an item to your inventory.</p></div>
+  <form onSubmit={(event) => void handleSubmit(event)} className="grid gap-5 p-5 sm:p-7">
+    <div className="grid gap-2"><Label htmlFor="name">Product name <span className="text-red-500">*</span></Label><Input id="name" value={form.name} onChange={(event) => setField("name", event.target.value)} placeholder="e.g. Starter Kit" aria-invalid={!!errors.name} className="w-full" />{errors.name && <p className="m-0 text-xs text-red-600">{errors.name}</p>}</div>
+    <div className="grid gap-2"><Label htmlFor="description">Description <span className="text-red-500">*</span></Label><textarea id="description" value={form.description} onChange={(event) => setField("description", event.target.value)} placeholder="Describe this product..." rows={4} aria-invalid={!!errors.description} className="w-full resize-y rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-2.5 text-sm text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)] focus:ring-2 focus:ring-[var(--hero-a)]" />{errors.description && <p className="m-0 text-xs text-red-600">{errors.description}</p>}</div>
+    <div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="price">Price (USD) <span className="text-red-500">*</span></Label><Input id="price" type="number" min="0" step="0.01" value={form.price} onChange={(event) => setField("price", event.target.value)} placeholder="0.00" aria-invalid={!!errors.price} className="w-full" />{errors.price && <p className="m-0 text-xs text-red-600">{errors.price}</p>}</div><div className="grid gap-2"><Label htmlFor="stock">Stock quantity <span className="text-red-500">*</span></Label><Input id="stock" type="number" min="0" step="1" value={form.stock} onChange={(event) => setField("stock", event.target.value)} placeholder="0" aria-invalid={!!errors.stock} className="w-full" />{errors.stock && <p className="m-0 text-xs text-red-600">{errors.stock}</p>}</div></div>
+    <div className="grid gap-2"><Label htmlFor="imageUrl">Image URL <span className="text-xs font-normal text-[var(--sea-ink-soft)]">(optional)</span></Label><div className="relative"><ImagePlus size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sea-ink-soft)]" /><Input id="imageUrl" type="url" value={form.imageUrl} onChange={(event) => setField("imageUrl", event.target.value)} placeholder="https://example.com/product.jpg" aria-invalid={!!errors.imageUrl} className="w-full pl-9" /></div>{errors.imageUrl && <p className="m-0 text-xs text-red-600">{errors.imageUrl}</p>}{form.imageUrl && !errors.imageUrl && <div className="mt-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-2"><img src={form.imageUrl} alt="Product preview" onError={(event) => { event.currentTarget.style.display = "none"; }} className="max-h-32 max-w-full rounded-lg object-contain" /><p className="mb-0 mt-2 text-xs text-[var(--sea-ink-soft)]">URL preview. Use a suitably sized image (512px maximum per side recommended).</p></div>}</div>
+    {message && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{message}</div>}
+    <div className="flex flex-col-reverse justify-end gap-2 border-t border-[var(--line)] pt-5 sm:flex-row"><Link to="/products" className="inline-flex items-center justify-center rounded-xl border border-[var(--line)] px-5 py-2.5 text-sm font-bold text-[var(--sea-ink)] no-underline hover:bg-[var(--link-bg-hover)]">Cancel</Link><Button type="submit" disabled={loading} className="w-full sm:w-auto">{loading ? "Creating product..." : "Create product"}</Button></div>
+  </form></section></main>;
 }

@@ -1,179 +1,46 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import {
-	createColumnHelper,
-	flexRender,
-	rowSortingFeature,
-	tableFeatures,
-	useTable,
-} from "@tanstack/react-table";
-
+import { createColumnHelper, flexRender, rowSortingFeature, tableFeatures, useTable } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown, Boxes, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import type { Product } from "@/lib/db";
 import { getServerSession } from "@/lib/server/auth";
 import { deleteProduct, getProducts } from "@/lib/server/products";
 
-export const Route = createFileRoute("/products/")({
-	beforeLoad: async () => {
-		const { session } = await getServerSession();
-		if (!session) {
-			return redirect({ to: "/demo/better-auth" }) as any;
-		}
-	},
-	component: Products,
-});
-
+export const Route = createFileRoute("/products/")({ beforeLoad: async () => { const { session } = await getServerSession(); if (!session) throw redirect({ to: "/login" }); }, component: Products });
 function Products() {
-	const queryClient = useQueryClient();
-	const productsQuery = useQuery({
-		queryKey: ["products"],
-		queryFn: async () => getProducts(),
-	});
-	const deleteFn = useServerFn(deleteProduct);
-
-	const features = tableFeatures({ rowSortingFeature });
-	const columnHelper = createColumnHelper<typeof features, Product>();
-
-	const columns = columnHelper.columns([
-		columnHelper.accessor("name", { header: "Name" }),
-		columnHelper.accessor("description", { header: "Description" }),
-		columnHelper.accessor("price", {
-			header: "Price",
-			cell: (info) => `$${Number(info.getValue()).toFixed(2)}`,
-		}),
-		columnHelper.accessor("stock", { header: "Stock" }),
-		columnHelper.display({
-			id: "actions",
-			header: "Actions",
-			cell: (info) => {
-				const product = info.row.original as Product;
-				return (
-					<div className="flex items-center gap-2">
-						<Link
-							to="/products/$productId"
-							params={{ productId: product.id }}
-							className="text-xs text-[var(--sea-ink)] underline underline-offset-4 hover:text-[var(--sea-ink)]"
-						>
-							Edit
-						</Link>
-						<button
-							type="button"
-							onClick={() => void handleDelete(product.id)}
-							className="text-xs text-red-600 hover:text-red-900 underline underline-offset-4"
-						>
-							Delete
-						</button>
-					</div>
-				);
-			},
-		}),
-	]);
-
-	const table = useTable({
-		features,
-		columns,
-		data: productsQuery.data ?? [],
-	});
-
-	const handleDelete = async (id: string) => {
-		if (!window.confirm("Delete this product?")) {
-			return;
-		}
-		try {
-			await deleteFn({ data: { id } });
-			await queryClient.invalidateQueries({ queryKey: ["products"] });
-		} catch (err) {
-			window.alert(err instanceof Error ? err.message : "Delete failed");
-		}
-	};
-
-	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-					<div>
-						<p className="island-kicker mb-2">Products</p>
-						<h1 className="display-title mb-1 text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
-							Products
-						</h1>
-						<p className="m-0 text-[var(--sea-ink-soft)]">
-							TanStack Table + TanStack Query + server functions. Admin only.
-						</p>
-					</div>
-					<Link
-						to="/products/new"
-						className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-5 py-3 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:bg-[var(--link-bg-hover)]"
-					>
-						Add Product
-					</Link>
-				</div>
-
-				<div className="overflow-x-auto">
-					<table className="w-full text-sm border-collapse">
-						<thead>
-							{table.getHeaderGroups().map((headerGroup) => (
-								<tr key={headerGroup.id}>
-									{headerGroup.headers.map((header) => {
-										return (
-											<th
-												key={header.id}
-												colSpan={header.colSpan}
-												className="px-4 py-3 text-left text-xs font-semibold text-[var(--sea-ink-soft)] bg-[var(--chip-bg)]"
-											>
-												{header.isPlaceholder ? null : (
-													<div
-														{...{
-															className: "flex items-center gap-1 cursor-pointer select-none",
-															onClick: header.column.getToggleSortingHandler(),
-														}}
-													>
-														{flexRender(header.column.columnDef.header, header.getContext())}
-														{{
-															asc: " ▲",
-															desc: " ▼",
-														}[header.column.getIsSorted() as string] ?? null}
-													</div>
-												)}
-											</th>
-										);
-									})}
-								</tr>
-							))}
-						</thead>
-						<tbody>
-							{table.getRowModel().rows.map((row) => {
-								return (
-									<tr key={row.id} className="border-b border-[var(--line)]">
-										{row.getAllCells().map((cell) => {
-											return (
-												<td key={cell.id} className="px-4 py-3">
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
-												</td>
-											);
-										})}
-									</tr>
-								);
-							})}
-							{table.getRowModel().rows.length === 0 && (
-								<tr>
-									<td
-										colSpan={columns.length}
-										className="px-4 py-8 text-center text-[var(--sea-ink-soft)]"
-									>
-										No products yet. Add one to get started.
-									</td>
-								</tr>
-							)}
-						</tbody>
-					</table>
-				</div>
-
-				{productsQuery.isError && (
-					<p className="mt-4 text-sm text-red-600">
-						Failed to load products: {(productsQuery.error as Error).message}
-					</p>
-				)}
-			</section>
-		</main>
-	);
+  const queryClient = useQueryClient();
+  const productsQuery = useQuery({ queryKey: ["products"], queryFn: async () => getProducts() });
+  const deleteFn = useServerFn(deleteProduct);
+  const [search, setSearch] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingId, setDeletingId] = useState("");
+  const products = useMemo(() => (productsQuery.data ?? []).filter((product) => `${product.name} ${product.description}`.toLowerCase().includes(search.toLowerCase())), [productsQuery.data, search]);
+  const features = tableFeatures({ rowSortingFeature });
+  const columnHelper = createColumnHelper<typeof features, Product>();
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Delete this product? This action cannot be undone.")) return;
+    setDeletingId(id); setDeleteError("");
+    try { await deleteFn({ data: { id } }); await queryClient.invalidateQueries({ queryKey: ["products"] }); }
+    catch (error) { setDeleteError(error instanceof Error ? error.message : "Could not delete product."); }
+    finally { setDeletingId(""); }
+  };
+  const columns = columnHelper.columns([
+    columnHelper.accessor("name", { header: "Product", cell: (info) => <div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]">{info.row.original.imageUrl ? <img src={info.row.original.imageUrl} alt="" className="h-full w-full object-cover" /> : <Boxes size={19} />}</div><div className="min-w-0"><p className="m-0 truncate text-sm font-bold text-[var(--sea-ink)]">{info.getValue()}</p><p className="m-0 mt-1 line-clamp-1 text-xs text-[var(--sea-ink-soft)]">{info.row.original.description}</p></div></div> }),
+    columnHelper.accessor("price", { header: "Price", cell: (info) => <span className="font-bold text-[var(--sea-ink)]">{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(info.getValue()))}</span> }),
+    columnHelper.accessor("stock", { header: "Stock", cell: (info) => <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${info.getValue() <= 5 ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"}`}>{info.getValue()} units</span> }),
+    columnHelper.display({ id: "actions", header: "Actions", cell: (info) => <div className="flex items-center gap-2"><Link to="/products/$productId" params={{ productId: info.row.original.id }} aria-label={`Edit ${info.row.original.name}`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--sea-ink-soft)] no-underline hover:bg-[var(--link-bg-hover)]"><Pencil size={15} /></Link><button type="button" onClick={() => void handleDelete(info.row.original.id)} disabled={deletingId === info.row.original.id} aria-label={`Delete ${info.row.original.name}`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"><Trash2 size={15} /></button></div> }),
+  ]);
+  const table = useTable({ features, columns, data: products });
+  return <main className="px-0 py-2 sm:py-3">
+    <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="island-kicker mb-2">Catalog management</p><h1 className="display-title mb-2 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">Products</h1><p className="m-0 text-sm leading-6 text-[var(--sea-ink-soft)]">Manage product details, pricing, and stock from one place.</p></div><Link to="/products/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sea-ink)] px-4 py-3 text-sm font-bold text-white no-underline hover:-translate-y-0.5"><PackagePlus size={17} /> Add product</Link></div>
+    {deleteError && <div role="alert" className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{deleteError}</div>}
+    <section className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-sm"><div className="flex flex-col justify-between gap-3 border-b border-[var(--line)] p-4 sm:flex-row sm:items-center sm:px-5"><div><h2 className="m-0 text-sm font-extrabold text-[var(--sea-ink)]">Product inventory</h2><p className="mb-0 mt-1 text-xs text-[var(--sea-ink-soft)]">{productsQuery.isPending ? "Loading inventory…" : `${products.length} of ${productsQuery.data?.length ?? 0} items`}</p></div><div className="relative w-full sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sea-ink-soft)]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products..." aria-label="Search products" className="w-full rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] py-2.5 pl-9 pr-3 text-sm text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)] focus:ring-2 focus:ring-[var(--hero-a)]" /></div></div>
+    {productsQuery.isPending ? <div className="grid gap-3 p-5">{[1,2,3].map((item) => <div key={item} className="h-14 animate-pulse rounded-xl bg-[var(--chip-bg)]" />)}</div> : productsQuery.isError ? <div role="alert" className="p-8 text-center text-sm text-red-600">Unable to load products. Refresh and try again.</div> : products.length === 0 ? <div className="px-5 py-14 text-center"><div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--hero-a)] text-[var(--sea-ink)]"><Boxes size={22} /></div><h3 className="m-0 text-base font-extrabold text-[var(--sea-ink)]">{search ? "No matching products" : "Your catalog is empty"}</h3><p className="mx-auto mb-4 mt-2 max-w-sm text-sm leading-6 text-[var(--sea-ink-soft)]">{search ? "Try a different search term." : "Add your first product to start tracking pricing and inventory."}</p>{!search && <Link to="/products/new" className="text-sm font-bold text-[var(--lagoon-deep)] underline underline-offset-4">Create a product</Link>}</div> : <>
+      <div className="hidden overflow-x-auto md:block"><table className="w-full text-left text-sm"><thead className="bg-[var(--chip-bg)]"><tr>{table.getHeaderGroups().map((group) => group.headers.map((header) => <th key={header.id} className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-[var(--sea-ink-soft)]">{header.isPlaceholder ? null : <button type="button" onClick={header.column.getToggleSortingHandler()} className="inline-flex items-center gap-2">{flexRender(header.column.columnDef.header, header.getContext())}{header.column.getIsSorted() === "asc" ? <ArrowUp size={13} /> : header.column.getIsSorted() === "desc" ? <ArrowDown size={13} /> : <ArrowUpDown size={13} />}</button>}</th>))}</tr></thead><tbody>{table.getRowModel().rows.map((row) => <tr key={row.id} className="border-t border-[var(--line)] transition hover:bg-[var(--link-bg-hover)]">{row.getVisibleCells().map((cell) => <td key={cell.id} className="px-5 py-4 align-middle">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>)}</tbody></table></div>
+      <div className="grid gap-3 p-3 md:hidden">{products.map((product) => <article key={product.id} className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4"><div className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]">{product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover" /> : <Boxes size={20} />}</div><div className="min-w-0 flex-1"><h3 className="m-0 break-words text-sm font-extrabold text-[var(--sea-ink)]">{product.name}</h3><p className="mb-0 mt-1 text-xs leading-5 text-[var(--sea-ink-soft)]">{product.description}</p><div className="mt-3 flex flex-wrap items-center gap-2"><span className="text-sm font-extrabold text-[var(--sea-ink)]">{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(product.price)}</span><span className="rounded-full bg-[var(--hero-a)] px-2.5 py-1 text-xs font-bold text-[var(--sea-ink)]">{product.stock} in stock</span></div></div></div><div className="mt-4 flex justify-end gap-2 border-t border-[var(--line)] pt-3"><Link to="/products/$productId" params={{ productId: product.id }} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-bold text-[var(--sea-ink)] no-underline"><Pencil size={13} /> Edit</Link><button type="button" onClick={() => void handleDelete(product.id)} disabled={deletingId === product.id} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 disabled:opacity-50 dark:border-red-900 dark:text-red-300"><Trash2 size={13} /> Delete</button></div></article>)}</div>
+    </>}
+    </section>
+  </main>;
 }

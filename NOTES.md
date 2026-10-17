@@ -1,0 +1,3 @@
+# What I broke and how I fixed it
+
+The starter UI still exposed documentation/demo navigation, routed sign-in through a demo path, used a generic starter header/footer, and relied on wide table layouts that were awkward on mobile. I replaced the public landing, login, and setup screens with an EKRAF-branded responsive UI, added a collapsible sidebar and mobile navigation, improved dashboard loading/error/empty states, and tightened server-side product/user validation and administrator protections. Product images are represented by an optional HTTP(S) URL field validated by the server; uploaded file storage and resizing are not implemented because the current in-memory product model does not store binary files.

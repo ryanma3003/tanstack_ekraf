@@ -1,84 +1,19 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
+import { CheckCircle2, Database, ShieldCheck, UserRoundCog } from "lucide-react";
 import { useState } from "react";
-
+import { useServerFn } from "@tanstack/react-start";
 import { seedAdmin } from "@/lib/server/auth";
 
 export const Route = createFileRoute("/setup")({ component: Setup });
-
 function Setup() {
-	const seedAdminFn = useServerFn(seedAdmin);
-	const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-	const [message, setMessage] = useState("");
-
-	const handleSeed = async () => {
-		setStatus("loading");
-		setMessage("");
-		try {
-			const result = await seedAdminFn();
-			setStatus("success");
-			setMessage(
-				result.alreadySeeded
-					? "Admin account already exists."
-					: "Admin account seeded. Sign in at /demo/better-auth with admin@example.com / admin12345",
-			);
-		} catch (err) {
-			setStatus("error");
-			setMessage(err instanceof Error ? err.message : "Seed failed");
-		}
-	};
-
-	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Setup</p>
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
-					Seed Admin Account
-				</h1>
-				<p className="m-0 max-w-2xl text-base leading-8 text-[var(--sea-ink-soft)]">
-					This creates the administrator account (password is hashed by Better Auth) and seeds
-					sample products. Run this once after deploying.
-				</p>
-
-				<div className="mt-8">
-					<button
-						type="button"
-						onClick={handleSeed}
-						disabled={status === "loading"}
-						className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-5 py-3 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:bg-[var(--link-bg-hover)] disabled:opacity-50"
-					>
-						{status === "loading" ? "Seeding..." : "Seed Admin Account"}
-					</button>
-
-					{status !== "idle" && (
-						<div className="mt-4 p-4 rounded-xl bg-[var(--chip-bg)] border border-[var(--line)]">
-							<p
-								className={`m-0 text-sm ${
-									status === "success"
-										? "text-green-700 dark:text-green-400"
-										: status === "error"
-											? "text-red-700 dark:text-red-400"
-											: "text-[var(--sea-ink-soft)]"
-								}`}
-							>
-								{message}
-							</p>
-						</div>
-					)}
-
-					<div className="mt-6">
-						<p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-							Already have an account?{" "}
-							<Link
-								to="/demo/better-auth"
-								className="underline underline-offset-4 font-medium hover:text-[var(--sea-ink)]"
-							>
-								Sign in
-							</Link>
-						</p>
-					</div>
-				</div>
-			</section>
-		</main>
-	);
+  const seedAdminFn = useServerFn(seedAdmin); const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle"); const [message, setMessage] = useState(""); const [alreadySeeded, setAlreadySeeded] = useState(false);
+  const handleSeed = async () => { setStatus("loading"); setMessage(""); try { const result = await seedAdminFn(); setAlreadySeeded(result.alreadySeeded); setStatus("success"); setMessage(result.alreadySeeded ? "Admin account already exists. No changes were needed." : "Admin account and sample catalog created successfully."); } catch (error) { setStatus("error"); setMessage(error instanceof Error ? error.message : "Setup failed. Please try again."); } };
+  return <main className="page-wrap px-4 py-10 sm:py-16"><section className="mx-auto max-w-3xl rounded-[2rem] border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-[0_24px_70px_rgba(15,55,52,0.10)] sm:p-10">
+    <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--hero-a)] text-[var(--sea-ink)]"><Database size={25} /></div><p className="island-kicker mb-2">Workspace initialization</p><h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">Set up your workspace</h1><p className="mb-8 max-w-2xl text-sm leading-7 text-[var(--sea-ink-soft)]">Initialize an administrator and sample products for this in-memory installation. Running setup again is safe: an existing administrator is not duplicated.</p>
+    <div className="grid gap-3 sm:grid-cols-2"><SetupInfo icon={<ShieldCheck size={18} />} title="Role protection" body="Admin-only actions remain restricted." /><SetupInfo icon={<UserRoundCog size={18} />} title="Starter account" body="A default administrator account is provisioned." /></div>
+    <button type="button" onClick={() => void handleSeed()} disabled={status === "loading"} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--sea-ink)] px-5 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 sm:w-auto">{status === "loading" ? "Initializing..." : status === "success" ? "Run setup again" : "Initialize workspace"}</button>
+    {status !== "idle" && <div role={status === "error" ? "alert" : "status"} className={`mt-5 flex items-start gap-3 rounded-xl border p-4 text-sm ${status === "error" ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300" : "border-[var(--line)] bg-[var(--chip-bg)] text-[var(--sea-ink)]"}`}>{status === "success" && <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />}<span>{message}{status === "success" && !alreadySeeded && <span className="mt-1 block text-xs opacity-80">Sign in with admin@example.com and the configured seed password.</span>}</span></div>}
+    <p className="mb-0 mt-7 text-sm text-[var(--sea-ink-soft)]">Already configured? <Link to="/login" className="font-bold text-[var(--lagoon-deep)] underline underline-offset-4">Go to sign in</Link>.</p><p className="mb-0 mt-3 text-xs leading-5 text-[var(--sea-ink-soft)]">Note: this starter stores records in memory, so they may reset when the server process restarts.</p>
+  </section></main>;
 }
+function SetupInfo({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) { return <div className="flex gap-3 rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4"><span className="text-[var(--lagoon-deep)]">{icon}</span><div><h2 className="m-0 text-sm font-extrabold text-[var(--sea-ink)]">{title}</h2><p className="mb-0 mt-1 text-xs leading-5 text-[var(--sea-ink-soft)]">{body}</p></div></div>; }

@@ -1,112 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
-
+import { Activity, ArrowDownRight, ArrowRight, Boxes, PackagePlus, ShieldCheck, Users, Wallet } from "lucide-react";
 import { getServerSession } from "@/lib/server/auth";
 import { getProducts } from "@/lib/server/products";
 import { getUsers } from "@/lib/server/users";
 
-export const Route = createFileRoute("/dashboard")({
-	beforeLoad: async () => {
-		const { session } = await getServerSession();
-		if (!session) {
-			return redirect({ to: "/demo/better-auth" }) as any;
-		}
-	},
-	component: Dashboard,
-});
-
+export const Route = createFileRoute("/dashboard")({ beforeLoad: async () => { const { session } = await getServerSession(); if (!session) return redirect({ to: "/login" }) as never; }, component: Dashboard });
 function Dashboard() {
-	const productsQuery = useQuery({
-		queryKey: ["dashboard", "products"],
-		queryFn: async () => getProducts(),
-	});
-	const usersQuery = useQuery({
-		queryKey: ["dashboard", "users"],
-		queryFn: async () => getUsers(),
-	});
-
-	const products = productsQuery.data ?? [];
-	const users = usersQuery.data ?? [];
-	const adminCount = users.filter((u) => u.role === "admin").length;
-
-	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-					<div>
-						<p className="island-kicker mb-2">Dashboard</p>
-						<h1 className="display-title mb-1 text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
-							Overview
-						</h1>
-						<p className="m-0 text-[var(--sea-ink-soft)]">
-							Secure admin area. All writes are validated server-side.
-						</p>
-					</div>
-				</div>
-
-				<div className="grid gap-4 sm:grid-cols-3">
-					<StatCard title="Products" value={products.length} />
-					<StatCard title="Users" value={users.length} />
-					<StatCard title="Administrators" value={adminCount} />
-				</div>
-
-				<div className="mt-8 grid gap-4 sm:grid-cols-2">
-					<Card title="Products" subtitle="View, create, edit, and delete products.">
-						<Link
-							to="/products"
-							className="text-[var(--sea-ink)] font-medium underline underline-offset-4 hover:text-[var(--sea-ink)]"
-						>
-							Manage products &rarr;
-						</Link>
-					</Card>
-					<Card title="Users" subtitle="Manage user accounts and roles (admin only).">
-						<Link
-							to="/users"
-							className="text-[var(--sea-ink)] font-medium underline underline-offset-4 hover:text-[var(--sea-ink)]"
-						>
-							Manage users &rarr;
-						</Link>
-					</Card>
-				</div>
-
-				{productsQuery.isError && (
-					<p className="mt-4 text-sm text-red-600">
-						Failed to load products: {(productsQuery.error as Error).message}
-					</p>
-				)}
-				{usersQuery.isError && (
-					<p className="mt-4 text-sm text-red-600">
-						Failed to load users: {(usersQuery.error as Error).message}
-					</p>
-				)}
-			</section>
-		</main>
-	);
+  const productsQuery = useQuery({ queryKey: ["dashboard", "products"], queryFn: async () => getProducts() }); const usersQuery = useQuery({ queryKey: ["dashboard", "users"], queryFn: async () => getUsers() }); const products = productsQuery.data ?? []; const users = usersQuery.data ?? [];
+  const totalStock = products.reduce((sum, product) => sum + product.stock, 0); const inventoryValue = products.reduce((sum, product) => sum + product.price * product.stock, 0); const adminCount = users.filter((user) => user.role === "admin").length; const loading = productsQuery.isPending || usersQuery.isPending;
+  return <main className="px-0 py-2 sm:py-3"><div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="island-kicker mb-2">Workspace overview</p><h1 className="display-title mb-2 text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">Dashboard</h1><p className="m-0 max-w-xl text-sm leading-6 text-[var(--sea-ink-soft)]">A live snapshot of your catalog and workspace activity.</p></div><div className="flex gap-2"><Link to="/products" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-2.5 text-sm font-bold text-[var(--sea-ink)] no-underline hover:bg-[var(--link-bg-hover)]"><Boxes size={16} /> Products</Link><Link to="/products/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sea-ink)] px-4 py-2.5 text-sm font-bold text-white no-underline hover:-translate-y-0.5"><PackagePlus size={16} /> Add product</Link></div></div>
+    {(productsQuery.isError || usersQuery.isError) && <div role="alert" className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">Some overview data could not be loaded. Refresh the page or check your access permissions.</div>}
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard icon={<Boxes size={19} />} label="Products" value={loading ? "—" : String(products.length)} hint="Active catalog items" /><StatCard icon={<Activity size={19} />} label="Units in stock" value={loading ? "—" : totalStock.toLocaleString()} hint="Combined inventory" /><StatCard icon={<Wallet size={19} />} label="Inventory value" value={loading ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(inventoryValue)} hint="Price × stock" /><StatCard icon={<Users size={19} />} label="Team members" value={loading ? "—" : String(users.length)} hint={loading ? "Loading access roles" : `${adminCount} administrator${adminCount === 1 ? "" : "s"}`} /></section>
+    <section className="mt-8 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]"><div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-5 shadow-sm sm:p-7"><div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="m-0 text-lg font-extrabold text-[var(--sea-ink)]">Recently added products</h2><p className="mb-0 mt-1 text-sm text-[var(--sea-ink-soft)]">Your latest catalog entries</p></div><Link to="/products" className="inline-flex items-center gap-1 text-sm font-bold text-[var(--lagoon-deep)] no-underline">View all <ArrowRight size={15} /></Link></div>
+    {loading ? <div className="grid gap-3">{[1,2,3].map((item) => <div key={item} className="h-14 animate-pulse rounded-xl bg-[var(--chip-bg)]" />)}</div> : productsQuery.isError ? <p className="text-sm text-red-600">Unable to load product list.</p> : products.length ? <div className="divide-y divide-[var(--line)]">{products.slice(0, 5).map((product) => <div key={product.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]"><Boxes size={18} /></span><div className="min-w-0"><p className="m-0 truncate text-sm font-bold text-[var(--sea-ink)]">{product.name}</p><p className="m-0 mt-1 line-clamp-1 text-xs text-[var(--sea-ink-soft)]">{product.description}</p></div></div><div className="shrink-0 text-right"><p className="m-0 text-sm font-extrabold text-[var(--sea-ink)]">{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(product.price)}</p><p className="m-0 mt-1 text-xs text-[var(--sea-ink-soft)]">{product.stock} in stock</p></div></div>)}</div> : <EmptyState text="No products yet. Add your first item to start building the catalog." linkText="Create a product" to="/products/new" />}</div>
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-5 shadow-sm sm:p-7"><div className="mb-5"><h2 className="m-0 text-lg font-extrabold text-[var(--sea-ink)]">Quick actions</h2><p className="mb-0 mt-1 text-sm text-[var(--sea-ink-soft)]">Common workspace tasks</p></div><div className="grid gap-3"><QuickAction icon={<PackagePlus size={18} />} title="Add a product" body="Create a catalog entry" to="/products/new" /><QuickAction icon={<Boxes size={18} />} title="Manage catalog" body="Review stock and pricing" to="/products" /><QuickAction icon={<Users size={18} />} title="Manage users" body="Review roles and accounts" to="/users" /></div><div className="mt-5 flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-[var(--lagoon-deep)]" /><div><p className="m-0 text-sm font-bold text-[var(--sea-ink)]">Protected workspace</p><p className="mb-0 mt-1 text-xs leading-5 text-[var(--sea-ink-soft)]">Sensitive operations are authorized and validated on the server.</p></div></div>{usersQuery.data && <p className="mb-0 mt-4 inline-flex items-center gap-1 text-xs text-[var(--sea-ink-soft)]"><ArrowDownRight size={13} /> User roles are checked before protected changes.</p>}</div></section>
+  </main>;
 }
-
-function StatCard({ title, value }: { title: string; value: number }) {
-	return (
-		<div className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-5">
-			<p className="m-0 text-sm text-[var(--sea-ink-soft)]">{title}</p>
-			<p className="m-0 mt-1 text-3xl font-bold text-[var(--sea-ink)]">{value}</p>
-		</div>
-	);
-}
-
-function Card({
-	title,
-	subtitle,
-	children,
-}: {
-	title: string;
-	subtitle: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-5">
-			<p className="m-0 text-sm text-[var(--sea-ink-soft)]">{title}</p>
-			<p className="m-0 mt-1 text-xs text-[var(--sea-ink-soft)]">{subtitle}</p>
-			<div className="mt-4">{children}</div>
-		</div>
-	);
-}
+function StatCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) { return <article className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--hero-a)] text-[var(--sea-ink)]">{icon}</span><span className="rounded-full bg-[var(--chip-bg)] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--sea-ink-soft)]">Overview</span></div><p className="m-0 text-sm font-semibold text-[var(--sea-ink-soft)]">{label}</p><p className="m-0 mt-1 break-words text-3xl font-extrabold tracking-tight text-[var(--sea-ink)]">{value}</p><p className="m-0 mt-2 text-xs text-[var(--sea-ink-soft)]">{hint}</p></article>; }
+function QuickAction({ icon, title, body, to }: { icon: React.ReactNode; title: string; body: string; to: "/products" | "/products/new" | "/users" }) { return <Link to={to} className="group flex items-center gap-3 rounded-xl border border-[var(--line)] p-3.5 no-underline transition hover:-translate-y-0.5 hover:bg-[var(--link-bg-hover)]"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--chip-bg)] text-[var(--lagoon-deep)]">{icon}</span><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-[var(--sea-ink)]">{title}</span><span className="mt-1 block text-xs text-[var(--sea-ink-soft)]">{body}</span></span><ArrowRight size={15} className="text-[var(--sea-ink-soft)] transition group-hover:translate-x-0.5" /></Link>; }
+function EmptyState({ text, linkText, to }: { text: string; linkText: string; to: "/products/new" }) { return <div className="rounded-xl border border-dashed border-[var(--line)] px-4 py-10 text-center"><Boxes size={28} className="mx-auto mb-3 text-[var(--sea-ink-soft)]" /><p className="mx-auto mb-4 max-w-xs text-sm leading-6 text-[var(--sea-ink-soft)]">{text}</p><Link to={to} className="text-sm font-bold text-[var(--lagoon-deep)] underline underline-offset-4">{linkText}</Link></div>; }
