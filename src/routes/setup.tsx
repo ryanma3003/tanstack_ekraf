@@ -19,8 +19,8 @@ function Setup() {
 			setStatus("success");
 			setMessage(
 				result.alreadySeeded
-					? "Admin account already exists."
-					: "Admin account seeded. Sign in at /demo/better-auth with admin@example.com / admin12345",
+					? `An administrator account already exists (${result.admin}).`
+					: `Administrator ${result.admin} is ready. Sign in to continue.`,
 			);
 		} catch (err) {
 			setStatus("error");
@@ -51,7 +51,10 @@ function Setup() {
 					</button>
 
 					{status !== "idle" && (
-						<div className="mt-4 p-4 rounded-xl bg-[var(--chip-bg)] border border-[var(--line)]">
+						<div
+							aria-live="polite"
+							className="mt-4 p-4 rounded-xl bg-[var(--chip-bg)] border border-[var(--line)]"
+						>
 							<p
 								className={`m-0 text-sm ${
 									status === "success"
@@ -70,7 +73,7 @@ function Setup() {
 						<p className="m-0 text-sm text-[var(--sea-ink-soft)]">
 							Already have an account?{" "}
 							<Link
-								to="/demo/better-auth"
+								to="/login"
 								className="underline underline-offset-4 font-medium hover:text-[var(--sea-ink)]"
 							>
 								Sign in

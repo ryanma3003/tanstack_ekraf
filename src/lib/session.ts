@@ -15,9 +15,11 @@ export async function getCurrentSession() {
 	const result = await auth.api.getSession({
 		headers: request.headers,
 	});
+	const user = result?.user ?? null;
 	return {
 		session: result?.session ?? null,
-		user: result?.user ?? null,
+		user,
+		role: user ? getUserRole(user.id) : null,
 	};
 }
 
@@ -28,7 +30,7 @@ export async function requireAuth() {
 		err.status = 401;
 		throw err;
 	}
-	return { session, user };
+	return { session, user, role: getUserRole(user.id) };
 }
 
 export async function requireAdmin() {
